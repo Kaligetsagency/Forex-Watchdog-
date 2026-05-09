@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Trading Bot Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .dashboard-container { margin-top: 50px; }
+        .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .status-online { color: #28a745; font-weight: bold; }
+        #results { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container dashboard-container">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card p-4">
+                    <h2 class="text-center mb-4">Deriv Trading Bot Dashboard</h2>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="marketSelect" class="form-label">Select Market</label>
+                            <select id="marketSelect" class="form-select">
+                                <option value="synthetic_index">Synthetic Indices</option>
+                                <option value="forex">Forex</option>
+                                <option value="cryptocurrency">Cryptocurrency</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button id="scanBtn" class="btn btn-primary w-100">Start Market Scan</button>
+                        </div>
+                    </div>
+
+                    <div id="statusArea" class="text-center mb-3 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Scanning market... Please wait. (Respecting rate limits)</p>
+                    </div>
+
+                    <div id="results" class="d-none">
+                        <h4>Scan Results (<span id="marketNameDisplay"></span>)</h4>
+                        <div class="table-responsive">
+                            <table class="table table-hover mt-3">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Trend</th>
+                                        <th>Entry</th>
+                                        <th>Stop Loss</th>
+                                        <th>Take Profit</th>
+                                        <th>R/R Ratio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsBody">
+                                    <!-- Results will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="noOpportunities" class="alert alert-info d-none text-center">
+                        No trade opportunities found matching the strategy criteria in this scan.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('scanBtn').addEventListener('click', async () => {
+            const market = document.getElementById('marketSelect').value;
+            const scanBtn = document.getElementById('scanBtn');
+            const statusArea = document.getElementById('statusArea');
+            const resultsDiv = document.getElementById('results');
+            const resultsBody = document.getElementById('resultsBody');
+            const noOpportunities = document.getElementById('noOpportunities');
+            const marketNameDisplay = document.getElementById('marketNameDisplay');
+
+            // UI Reset
+            scanBtn.disabled = true;
+            statusArea.classList.remove('d-none');
+            resultsDiv.classList.add('d-none');
+            noOpportunities.classList.add('d-none');
+            resultsBody.innerHTML = '';
+
+            try {
+                const response = await fetch(`/scan?market=${market}`);
+                const data = await response.json();
+
+                statusArea.classList.add('d-none');
+                scanBtn.disabled = false;
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                marketNameDisplay.innerText = data.market;
+
+                if (data.opportunities && data.opportunities.length > 0) {
+                    data.opportunities.forEach(opp => {
+                        const row = `
+                            <tr>
+                                <td><strong>${opp.symbol}</strong></td>
+                                <td><span class="badge ${opp.trend === 'uptrend' ? 'bg-success' : 'bg-danger'}">${opp.trend.toUpperCase()}</span></td>
+                                <td>${opp.entry}</td>
+                                <td>${opp.sl}</td>
+                                <td>${opp.tp}</td>
+                                <td>${opp.rr}</td>
+                            </tr>
+                        `;
+                        resultsBody.innerHTML += row;
+                    });
+                    resultsDiv.classList.remove('d-none');
+                } else {
+                    noOpportunities.classList.remove('d-none');
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred during scanning.');
+                statusArea.classList.add('d-none');
+                scanBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
