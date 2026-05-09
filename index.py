@@ -5,6 +5,9 @@ from deriv_api import DerivAPI
 from strategy import calculate_indicators, detect_trend, calculate_trade_levels
 
 app = Flask(__name__)
+app = app # Alias for Vercel
+application = app # Alias for Vercel
+handler = app # Alias for Vercel
 
 # TARGET_MARKET configuration
 # Options: "synthetic_index", "forex", "cryptocurrency"
