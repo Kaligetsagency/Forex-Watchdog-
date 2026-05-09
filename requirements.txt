@@ -1,3 +1,5 @@
 websocket-client
 pandas
 pandas-ta
+Flask
+gunicorn
